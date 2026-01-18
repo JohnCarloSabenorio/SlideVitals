@@ -37,13 +37,13 @@ export default function Slide({
 
       {slideProblems.fontNameErrors.length != 0 && <h1 className="text-3xl mt-3">Font Family</h1>}
 
-      <div className="mt-3">
+      {/* <div className="mt-3">
         <ul className="list-disc text-red-500 font-semibold mx-3">
           {slideProblems.fontNameErrors.map((error, idx) => {
             return <li key={idx}>{error}</li>;
           })}
         </ul>
-      </div>
+      </div> */}
     </div>
   );
 }

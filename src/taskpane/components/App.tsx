@@ -19,6 +19,8 @@ const App: React.FC<AppProps> = (props: AppProps) => {
   // so this should be an ordinary const, not a part of state.
 
   const [presentationErrors, setPresentationErrors] = useState({});
+  const [globalFontNameError, setGlobalFontNameError] = useState("");
+  const [globalFontSizeError, setGlobalFontSizeError] = useState("");
   const [isScanning, setIsScanning] = useState(false);
 
   async function scanSlideVitals() {
@@ -28,7 +30,8 @@ const App: React.FC<AppProps> = (props: AppProps) => {
       await context.sync();
 
       const slideErrors = {};
-      const globalFontSizes = new Set();
+
+      const globalFontSizes: Set<number> = new Set();
       const globalFontNames = new Set();
       // Check text shapes
       for (let i = 0; i < slideCount.value; i++) {
@@ -64,9 +67,10 @@ const App: React.FC<AppProps> = (props: AppProps) => {
       function checkTexts(textShapes, slideNumber) {
         let charCount = 0;
         let usedFonts = [];
+        let usedFontSizes = [];
         let fontNameErrors = [];
-        // let fontSizeWarnings = [];
-        // let fontSizeErrors = [];
+        let fontSizeWarnings = [];
+        let fontSizeErrors = [];
         // Get total text count
 
         textShapes.forEach((textShape) => {
@@ -77,17 +81,39 @@ const App: React.FC<AppProps> = (props: AppProps) => {
           usedFonts.push(textShape.textFrame.textRange.font.name);
           // Check font size consistency
           globalFontSizes.add(textShape.textFrame.textRange.font.size);
+          usedFontSizes.push(textShape.textFrame.textRange.font.size);
           charCount += text.length;
         });
 
+        // Check if presentation has more than 2 fonts
         if (globalFontNames.size > 2) {
-          fontNameErrors.push(
-            `Inconsistent font. Slide should only use two main fonts for consistency. Recorded fonts: ${Array.from(globalFontNames)} | Detected Font in slide: ${usedFonts}`
+          setGlobalFontNameError(
+            `Inconsistent font. Slide should only use two main fonts for consistency. Recorded fonts: ${Array.from(globalFontNames)}`
           );
+        }
+
+        console.log("global font sizes:", globalFontSizes);
+        if (globalFontSizes.size > 4) {
+          setGlobalFontSizeError(
+            `You should only use up to 4 font sizes for your presentation to maintain consistency. Recorded font sizes: ${Array.from(globalFontSizes)}`
+          );
+        }
+
+        // Check if the values are within the range of minimum and maximum font size
+        for (const fontSize of Array.from(globalFontSizes)) {
+          if (fontSize < 12) {
+            fontSizeErrors.push(`Your font size should be a minimum of 12.`);
+            break;
+          } else if (fontSize > 72) {
+            fontSizeErrors.push(`Your font size should be a maximum of 72.`);
+            break;
+          }
         }
 
         let textDensityWarnings = [];
         let textDensityErrors = [];
+
+        // Check the character count of a slide
         if (charCount > 400 && charCount <= 700) {
           textDensityWarnings.push(
             "Slide has too much text (400+ characters). Consider shortening or splitting the content."
@@ -103,9 +129,8 @@ const App: React.FC<AppProps> = (props: AppProps) => {
           textDensityErrors,
           textDensityWarnings,
           fontNameErrors,
+          fontSizeErrors,
         };
-
-        console.log("the slide errors:", slideErrors);
       }
     });
   }
@@ -121,7 +146,11 @@ const App: React.FC<AppProps> = (props: AppProps) => {
         {isScanning ? "Scanning..." : "Scan Now"}
       </button>
 
-      <Results presentationErrors={presentationErrors} />
+      <Results
+        presentationErrors={presentationErrors}
+        globalFontNameError={globalFontNameError}
+        globalFontSizeError={globalFontSizeError}
+      />
     </div>
   );
 };
